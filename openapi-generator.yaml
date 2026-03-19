@@ -1,0 +1,4 @@
+packageName: generated
+enumClassPrefix: true
+hideGenerationTimestamp: true
+disallowAdditionalPropertiesIfNotPresent: false

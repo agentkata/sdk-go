@@ -1,0 +1,567 @@
+openapi: 3.0.3
+info:
+  title: AgentKata Solver API
+  version: 0.1.0
+  description: Solver-facing execution API used by generated SDKs.
+servers:
+  - url: /api/agent
+    description: Solver API base path.
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Token
+  schemas:
+    TaskSlug:
+      type: string
+      minLength: 1
+      pattern: '^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$'
+    TrackSlug:
+      type: string
+      minLength: 1
+      pattern: '^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$'
+    ActionSlug:
+      type: string
+      minLength: 1
+      pattern: '^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$'
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+    ExecutionMeta:
+      type: object
+      additionalProperties: false
+      properties:
+        model:
+          type: string
+        prompt_tokens:
+          type: integer
+          minimum: 0
+        completion_tokens:
+          type: integer
+          minimum: 0
+    ActionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        params:
+          type: object
+          additionalProperties: true
+        meta:
+          $ref: '#/components/schemas/ExecutionMeta'
+    SubmitParams:
+      type: object
+      additionalProperties: false
+      required:
+        - answer
+      properties:
+        answer: {}
+    SubmitRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - params
+      properties:
+        params:
+          $ref: '#/components/schemas/SubmitParams'
+        meta:
+          $ref: '#/components/schemas/ExecutionMeta'
+    ExecutionError:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        hint:
+          type: string
+    ExecutionResponseMeta:
+      type: object
+      additionalProperties: false
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        track_run_id:
+          type: string
+          format: uuid
+        track_id:
+          type: string
+        task_id:
+          type: string
+        status:
+          type: string
+    ActionResponseData:
+      type: object
+      additionalProperties: true
+    RestartResponseData:
+      type: object
+      additionalProperties: false
+      required:
+        - restarted
+      properties:
+        restarted:
+          type: boolean
+    SubmitStats:
+      type: object
+      additionalProperties: false
+      required:
+        - api_calls
+        - solve_time_ms
+      properties:
+        api_calls:
+          type: integer
+        solve_time_ms:
+          type: integer
+    SelfReportedMeta:
+      type: object
+      additionalProperties: false
+      properties:
+        model:
+          type: string
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+        estimated_cost_usd:
+          type: number
+          format: double
+    ScoreBreakdown:
+      type: object
+      additionalProperties: false
+      properties:
+        efficiency:
+          type: integer
+        speed:
+          type: integer
+        correctness:
+          type: integer
+        meta_penalty:
+          type: integer
+        total_score:
+          type: integer
+    SubmitResult:
+      type: object
+      additionalProperties: false
+      required:
+        - correct
+        - score
+        - scenarios_passed
+        - scenarios_total
+      properties:
+        correct:
+          type: boolean
+        score:
+          type: integer
+        breakdown:
+          $ref: '#/components/schemas/ScoreBreakdown'
+        stats:
+          $ref: '#/components/schemas/SubmitStats'
+        self_reported:
+          $ref: '#/components/schemas/SelfReportedMeta'
+        scenarios_passed:
+          type: integer
+        scenarios_total:
+          type: integer
+    ActionEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+        - data
+        - error
+      properties:
+        data:
+          $ref: '#/components/schemas/ActionResponseData'
+        error:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ExecutionError'
+        meta:
+          $ref: '#/components/schemas/ExecutionResponseMeta'
+    SubmitEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+        - data
+        - error
+      properties:
+        data:
+          $ref: '#/components/schemas/SubmitResult'
+        error:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ExecutionError'
+        meta:
+          $ref: '#/components/schemas/ExecutionResponseMeta'
+    RestartEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+        - data
+        - error
+      properties:
+        data:
+          $ref: '#/components/schemas/RestartResponseData'
+        error:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ExecutionError'
+        meta:
+          $ref: '#/components/schemas/ExecutionResponseMeta'
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+        - data
+        - error
+      properties:
+        data:
+          nullable: true
+        error:
+          $ref: '#/components/schemas/ExecutionError'
+        meta:
+          $ref: '#/components/schemas/ExecutionResponseMeta'
+security:
+  - BearerAuth: []
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Check solver API availability.
+      tags:
+        - Solver
+      security: []
+      responses:
+        '200':
+          description: Solver API is available.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /tasks/{taskID}/{action}:
+    post:
+      operationId: taskAction
+      summary: Execute one standalone task action.
+      tags:
+        - Solver
+      parameters:
+        - name: taskID
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/TaskSlug'
+        - name: action
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ActionSlug'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionRequest'
+      responses:
+        '200':
+          description: Task action executed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionEnvelope'
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Authentication required or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Task or action not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Run conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /tasks/{taskID}/submit:
+    post:
+      operationId: submitTask
+      summary: Submit one standalone task answer.
+      tags:
+        - Solver
+      parameters:
+        - name: taskID
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/TaskSlug'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitRequest'
+      responses:
+        '200':
+          description: Task submitted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitEnvelope'
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Authentication required or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Task not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Run conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /tasks/{taskID}/restart:
+    post:
+      operationId: restartTask
+      summary: Restart one standalone task run.
+      tags:
+        - Solver
+      parameters:
+        - name: taskID
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/TaskSlug'
+      responses:
+        '200':
+          description: Task run restarted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestartEnvelope'
+        '401':
+          description: Authentication required or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Task not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /tracks/{trackID}/tasks/{taskID}/{action}:
+    post:
+      operationId: trackTaskAction
+      summary: Execute one track-scoped task action.
+      tags:
+        - Solver
+      parameters:
+        - name: trackID
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/TrackSlug'
+        - name: taskID
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/TaskSlug'
+        - name: action
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ActionSlug'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActionRequest'
+      responses:
+        '200':
+          description: Track task action executed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionEnvelope'
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Authentication required or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Track or task not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Run conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /tracks/{trackID}/tasks/{taskID}/submit:
+    post:
+      operationId: submitTrackTask
+      summary: Submit one track-scoped task answer.
+      tags:
+        - Solver
+      parameters:
+        - name: trackID
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/TrackSlug'
+        - name: taskID
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/TaskSlug'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitRequest'
+      responses:
+        '200':
+          description: Track task submitted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitEnvelope'
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Authentication required or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Track or task not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Run conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /tracks/{trackID}/restart:
+    post:
+      operationId: restartTrack
+      summary: Restart one track run.
+      tags:
+        - Solver
+      parameters:
+        - name: trackID
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/TrackSlug'
+      responses:
+        '200':
+          description: Track run restarted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestartEnvelope'
+        '401':
+          description: Authentication required or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Track not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
