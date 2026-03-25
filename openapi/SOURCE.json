@@ -1,6 +1,6 @@
 {
   "source_repo": "backend",
-  "source_commit": null,
+  "source_commit": "904b1d5e8a99dc676714754354e15922b6c6c48b",
   "source_spec": "/Users/kirill/Documents/ccsandbox/agentskata/backend/api/openapi/solver.yaml",
-  "synced_at": "manual"
+  "synced_at": "2026-03-25T23:08:51Z"
 }
