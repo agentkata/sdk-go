@@ -168,6 +168,9 @@ components:
           type: integer
         breakdown:
           $ref: '#/components/schemas/ScoreBreakdown'
+        details:
+          type: object
+          additionalProperties: true
         stats:
           $ref: '#/components/schemas/SubmitStats'
         self_reported:

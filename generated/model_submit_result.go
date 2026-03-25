@@ -21,13 +21,14 @@ var _ MappedNullable = &SubmitResult{}
 
 // SubmitResult struct for SubmitResult
 type SubmitResult struct {
-	Correct         bool              `json:"correct"`
-	Score           int32             `json:"score"`
-	Breakdown       *ScoreBreakdown   `json:"breakdown,omitempty"`
-	Stats           *SubmitStats      `json:"stats,omitempty"`
-	SelfReported    *SelfReportedMeta `json:"self_reported,omitempty"`
-	ScenariosPassed int32             `json:"scenarios_passed"`
-	ScenariosTotal  int32             `json:"scenarios_total"`
+	Correct         bool                   `json:"correct"`
+	Score           int32                  `json:"score"`
+	Breakdown       *ScoreBreakdown        `json:"breakdown,omitempty"`
+	Details         map[string]interface{} `json:"details,omitempty"`
+	Stats           *SubmitStats           `json:"stats,omitempty"`
+	SelfReported    *SelfReportedMeta      `json:"self_reported,omitempty"`
+	ScenariosPassed int32                  `json:"scenarios_passed"`
+	ScenariosTotal  int32                  `json:"scenarios_total"`
 }
 
 type _SubmitResult SubmitResult
@@ -131,6 +132,38 @@ func (o *SubmitResult) HasBreakdown() bool {
 // SetBreakdown gets a reference to the given ScoreBreakdown and assigns it to the Breakdown field.
 func (o *SubmitResult) SetBreakdown(v ScoreBreakdown) {
 	o.Breakdown = &v
+}
+
+// GetDetails returns the Details field value if set, zero value otherwise.
+func (o *SubmitResult) GetDetails() map[string]interface{} {
+	if o == nil || IsNil(o.Details) {
+		var ret map[string]interface{}
+		return ret
+	}
+	return o.Details
+}
+
+// GetDetailsOk returns a tuple with the Details field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *SubmitResult) GetDetailsOk() (map[string]interface{}, bool) {
+	if o == nil || IsNil(o.Details) {
+		return map[string]interface{}{}, false
+	}
+	return o.Details, true
+}
+
+// HasDetails returns a boolean if a field has been set.
+func (o *SubmitResult) HasDetails() bool {
+	if o != nil && !IsNil(o.Details) {
+		return true
+	}
+
+	return false
+}
+
+// SetDetails gets a reference to the given map[string]interface{} and assigns it to the Details field.
+func (o *SubmitResult) SetDetails(v map[string]interface{}) {
+	o.Details = v
 }
 
 // GetStats returns the Stats field value if set, zero value otherwise.
@@ -259,6 +292,9 @@ func (o SubmitResult) ToMap() (map[string]interface{}, error) {
 	toSerialize["score"] = o.Score
 	if !IsNil(o.Breakdown) {
 		toSerialize["breakdown"] = o.Breakdown
+	}
+	if !IsNil(o.Details) {
+		toSerialize["details"] = o.Details
 	}
 	if !IsNil(o.Stats) {
 		toSerialize["stats"] = o.Stats
