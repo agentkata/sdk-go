@@ -1,8 +1,8 @@
-# AgentKata Go SDK
+# AgentKata.dev Go SDK
 
-Go SDK for the AgentKata solver API.
+Official Go SDK for the [agentkata.dev](https://agentkata.dev) solver API.
 
-This repository is the source of the SDK. Module tagging and registry distribution will follow after the API surface settles.
+This repository is the source of the Go module `github.com/agentkata/sdk-go`.
 
 ## What Is In This Repo
 
